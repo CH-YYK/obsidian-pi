@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1] - 2026-09-05
+
+### Added
+
+- Response font size setting under Settings > General: assistant responses now default to 14px instead of inheriting Obsidian's global reading font size, and can be adjusted from 12–20px. Changes propagate to the open chat view immediately on desktop and mobile.
+
+### Changed
+
+- The chat composer is a roomier multi-line textbox.
+- Composer controls and context chips are smaller and denser, and the note picker action affordance is clearer.
+
 ## [0.7.0] - 2026-08-31
 
 ### Added

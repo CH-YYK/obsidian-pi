@@ -398,7 +398,9 @@
 }
 .note-pi-message-assistant .note-pi-message-body {
   line-height: 1.6;
-  font-size: var(--font-text-size, var(--font-ui-medium));
+  /* Sized by the "Response font size" setting (--note-pi-response-font-size is
+     applied on the view element; only assistant bodies consume it). */
+  font-size: var(--note-pi-response-font-size, 14px);
 }
 .note-pi-message-assistant .note-pi-message-body > :first-child { margin-top: 0; }
 .note-pi-message-assistant .note-pi-message-body > :last-child { margin-bottom: 0; }
@@ -514,7 +516,8 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 2px 6px;
+  height: 24px;
+  padding: 0 8px;
   border: none;
   border-radius: 99px;
   background: transparent;
@@ -523,9 +526,14 @@
   font-size: var(--font-ui-smaller);
   cursor: pointer;
 }
-.note-pi-context-add:hover {
+.note-pi-context-add:hover,
+.note-pi-context-add:focus-visible {
   background: var(--background-modifier-hover);
   color: var(--text-muted);
+}
+.note-pi-context-add:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
 }
 .note-pi-context-add-icon {
   display: inline-flex;
@@ -711,7 +719,7 @@
   background: transparent;
   resize: none;
   padding: 10px 12px 4px;
-  min-height: 38px;
+  min-height: 56px;
   max-height: 200px;
   line-height: 1.5;
   box-shadow: none;
@@ -724,12 +732,12 @@
 .note-pi-composer-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 8px 8px;
+  gap: 6px;
+  padding: 3px 6px 6px;
 }
 .note-pi-model-select {
-  max-width: 160px;
-  height: 24px;
+  max-width: 140px;
+  height: 22px;
   padding: 1px 18px 1px 4px;
   border: 1px solid transparent;
   border-radius: 7px;
@@ -756,11 +764,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   padding: 0;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: 7px;
+  font-size: 13px;
   line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
@@ -839,8 +847,16 @@
   padding-bottom: 8px;
 }
 
-.note-pi-mobile .note-pi-user-card,
-.note-pi-mobile .note-pi-message-body {
+/* Touch target: the desktop context-add pill is 24px; mobile restores a
+   >=40px minimum height. */
+.note-pi-mobile .note-pi-context-add {
+  min-height: 40px;
+}
+
+/* The mobile user card keeps the larger fixed mobile font size and line
+   height. Assistant bodies are intentionally not overridden here so they
+   consume the configured --note-pi-response-font-size like desktop. */
+.note-pi-mobile .note-pi-user-card {
   font-size: var(--font-ui-medium);
   line-height: 1.6;
 }

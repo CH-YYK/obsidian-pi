@@ -4,14 +4,15 @@ import { anthropicProvider } from "@earendil-works/pi-ai/providers/anthropic";
 import { kimiCodingProvider } from "@earendil-works/pi-ai/providers/kimi-coding";
 import { openaiProvider } from "@earendil-works/pi-ai/providers/openai";
 import { AUTH_PROVIDERS, MOBILE_PROVIDER_IDS } from "../shared/providers.mjs";
+import { normalizeResponseFontSize, RESPONSE_FONT_SIZE_DEFAULT } from "../shared/response-font-size.mjs";
 import { NotePiSettingsTab } from "../settings";
 import { MobileAgentController } from "./controller.mjs";
 import { obsidianRequestUrlFetch } from "./network.mjs";
 import { createMobileVaultReadTool } from "./vault-adapter.mjs";
 import { MobileAgentView, VIEW_TYPE_NOTE_PI_MOBILE } from "./view";
 
-interface MobileSettings { providerId: string; credentials: Record<string, { type: "api_key"; key?: string }>; }
-const DEFAULT_SETTINGS: MobileSettings = { providerId: "google", credentials: {} };
+interface MobileSettings { providerId: string; responseFontSize: number; credentials: Record<string, { type: "api_key"; key?: string }>; }
+const DEFAULT_SETTINGS: MobileSettings = { providerId: "google", responseFontSize: RESPONSE_FONT_SIZE_DEFAULT, credentials: {} };
 
 /** Providers validated for the iOS WebView build. */
 const MOBILE_PROVIDERS = AUTH_PROVIDERS.filter((provider) => MOBILE_PROVIDER_IDS.includes(provider.id));
@@ -41,10 +42,13 @@ export default class NotePiMobilePlugin extends Plugin {
     }
     this.settings = {
       providerId: MOBILE_PROVIDERS.some((provider) => provider.id === saved?.providerId) ? saved.providerId : DEFAULT_SETTINGS.providerId,
+      responseFontSize: normalizeResponseFontSize(saved?.responseFontSize),
       credentials
     };
     await this.configureHarness();
-    this.registerView(VIEW_TYPE_NOTE_PI_MOBILE, (leaf) => new MobileAgentView(leaf, this.startController(), () => this.openSettings()));
+    this.registerView(VIEW_TYPE_NOTE_PI_MOBILE, (leaf) => new MobileAgentView(leaf, this.startController(), () => this.openSettings(), {
+      responseFontSize: () => this.settings.responseFontSize
+    }));
     this.addSettingTab(new NotePiSettingsTab(this.app, this));
     this.addCommand({ id: "open-chat", name: "Open chat", callback: () => this.activateView() });
     this.addCommand({ id: "open-settings", name: "Open settings", callback: () => this.openSettings() });
@@ -71,6 +75,17 @@ export default class NotePiMobilePlugin extends Plugin {
 
   testProvider(providerId: string) {
     return this.startController().testProviderConnection(providerId);
+  }
+
+  responseFontSize() { return normalizeResponseFontSize(this.settings.responseFontSize); }
+  async setResponseFontSize(size: number) {
+    this.settings.responseFontSize = normalizeResponseFontSize(size);
+    await this.saveSettings();
+    // Apply immediately to open mobile Note Pi views; no plugin reload needed.
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_NOTE_PI_MOBILE)) {
+      const view = leaf.view;
+      if (view instanceof MobileAgentView) view.applyResponseFontSize();
+    }
   }
 
   openSettings() {
@@ -116,6 +131,7 @@ export default class NotePiMobilePlugin extends Plugin {
   private async saveSettings() {
     const data = await this.loadStoredSettings();
     data.providerId = this.settings.providerId;
+    data.responseFontSize = this.settings.responseFontSize;
     data.credentials = this.settings.credentials;
     await this.saveData(data);
   }

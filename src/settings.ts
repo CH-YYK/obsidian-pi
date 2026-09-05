@@ -1,5 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type { Plugin, SettingDefinitionItem } from "obsidian";
+import { RESPONSE_FONT_SIZE_DEFAULT, RESPONSE_FONT_SIZE_MAX, RESPONSE_FONT_SIZE_MIN } from "./shared/response-font-size.mjs";
 
 export interface ProviderInfo { id: string; label: string; apiKeyLabel: string; }
 export interface StoredCredential { type: "api_key"; key?: string; }
@@ -28,6 +29,8 @@ export interface ProviderConfigHost {
   saveAgentDir?(agentDir: string): Promise<void>;
   autoContextNote?(): boolean;
   setAutoContextNote?(enabled: boolean): Promise<void>;
+  responseFontSize?(): number;
+  setResponseFontSize?(size: number): Promise<void>;
   extensionStatus?(): { extensions: ExtensionInfo[] };
 }
 
@@ -59,6 +62,19 @@ export class NotePiSettingsTab extends PluginSettingTab {
             name: "Attach the focused note",
             desc: "Add the currently focused note as context when a chat session starts. The chip can be removed per session in the composer.",
             control: { type: "toggle" as const, key: "auto-context-note", defaultValue: true }
+          }] : []),
+          ...(typeof this.plugin.responseFontSize === "function" && typeof this.plugin.setResponseFontSize === "function" ? [{
+            name: "Response font size",
+            desc: "Font size for assistant responses in the Note Pi pane.",
+            control: {
+              type: "slider" as const,
+              key: "response-font-size",
+              min: RESPONSE_FONT_SIZE_MIN,
+              max: RESPONSE_FONT_SIZE_MAX,
+              step: 1,
+              defaultValue: RESPONSE_FONT_SIZE_DEFAULT,
+              displayFormat: (value: number) => `${value} px`
+            }
           }] : []),
           ...(typeof this.plugin.defaultAgentDir === "function" && typeof this.plugin.saveAgentDir === "function" ? [{
             name: "Pi agent directory",
@@ -130,6 +146,8 @@ export class NotePiSettingsTab extends PluginSettingTab {
     switch (key) {
       case "auto-context-note":
         return this.plugin.autoContextNote?.() ?? true;
+      case "response-font-size":
+        return this.plugin.responseFontSize?.() ?? RESPONSE_FONT_SIZE_DEFAULT;
       case "agent-dir":
         return this.plugin.settings.agentDir ?? "";
       case "editing-provider-id":
@@ -142,6 +160,10 @@ export class NotePiSettingsTab extends PluginSettingTab {
   async setControlValue(key: string, value: unknown): Promise<void> {
     if (key === "auto-context-note" && typeof value === "boolean" && this.plugin.setAutoContextNote) {
       await this.plugin.setAutoContextNote(value);
+      return;
+    }
+    if (key === "response-font-size" && typeof value === "number" && this.plugin.setResponseFontSize) {
+      await this.plugin.setResponseFontSize(value);
       return;
     }
     if (key === "agent-dir" && typeof value === "string" && this.plugin.saveAgentDir) {
@@ -159,6 +181,7 @@ export class NotePiSettingsTab extends PluginSettingTab {
   private hasGeneralSettings(): boolean {
     return (
       (typeof this.plugin.autoContextNote === "function" && typeof this.plugin.setAutoContextNote === "function") ||
+      (typeof this.plugin.responseFontSize === "function" && typeof this.plugin.setResponseFontSize === "function") ||
       (typeof this.plugin.defaultAgentDir === "function" && typeof this.plugin.saveAgentDir === "function")
     );
   }
