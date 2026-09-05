@@ -77,7 +77,7 @@ provider API keys ───────► apply persistent configuration ──
                                       render message deltas
 ```
 
-Note Pi settings are split into three tabs. **General** holds the agent directory and auto-context toggle. **Extensions** lists the extensions currently loaded from that directory. **API Provider** is a pure key manager: pick a provider, paste its key, and save; each stored key can be replaced, connection-tested, or removed. Multiple providers can hold keys at the same time, and key management never touches the chat session.
+Note Pi settings are split into three tabs. **General** holds the agent directory, the auto-context toggle, and the response font size (12–20px, default 14px; applies to assistant messages and updates the open chat immediately). **Extensions** lists the extensions currently loaded from that directory. **API Provider** is a pure key manager: pick a provider, paste its key, and save; each stored key can be replaced, connection-tested, or removed. Multiple providers can hold keys at the same time, and key management never touches the chat session.
 
 The composer bar contains the current model picker, the UI equivalent of a basic `/model` control. It lists the bundled Pi model catalog for every configured provider, grouped by provider. Model choice is session-only: it is held by the harness, preserves the current transcript, and is never written to Obsidian plugin data. If the active provider's key is removed, the harness falls back to any remaining configured provider.
 
@@ -106,7 +106,7 @@ The mobile runtime runs in Obsidian's iOS WebView. `npm run build` also emits `m
 - **Extensions, slash commands, shell tools, and write tools are excluded.** The first mobile profile is read-only by design.
 - Mobile supports Google Gemini, Anthropic, Kimi Code, and OpenAI. The composer model picker spans every provider with a saved key, and picking a model from another provider switches the active provider. GitHub Copilot stays desktop-only (its OAuth device flow needs a browser handoff); OpenRouter joins after its transport is validated on-device.
 
-On mobile the settings tab shows only the capabilities the mobile plugin implements (API keys); the agent directory, extension inventory, and auto-context controls appear only on desktop.
+On mobile the settings show only the capabilities the mobile plugin implements: the **API Provider** key manager and a **General** tab with the response font size. The agent directory, extension inventory, and auto-context controls appear only on desktop.
 
 ## Using the chat
 
