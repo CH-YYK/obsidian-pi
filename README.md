@@ -117,6 +117,7 @@ On mobile the settings show only the capabilities the mobile plugin implements: 
 5. Add note context with **Add note**, or type `@` followed by a note name; select a result to create a removable context chip.
 6. Type `/` to browse commands from loaded extensions; select one to complete it in the composer.
 7. Send a message. Press `Escape` while a response is streaming to cancel it, or while a suggestion list is open to dismiss the list.
+8. Hover an assistant message and click **Copy Markdown** to copy its raw Markdown source — headings, lists, links, and code formatting are preserved as written. (Desktop only.)
 
 The model menu spans the bundled Pi model catalogs of every provider with a saved key, grouped by provider. Each provider's credentials and model list are independent of the others.
 

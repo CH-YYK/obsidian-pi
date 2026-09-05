@@ -1,6 +1,6 @@
 {
   "name": "note-pi",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "private": false,
   "description": "Obsidian view backed by an embedded Pi harness runtime, on desktop and mobile",
   "scripts": {
