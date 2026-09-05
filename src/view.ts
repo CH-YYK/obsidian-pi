@@ -54,6 +54,13 @@ export class ObsidianAgentView extends ItemView {
   private streamRender?: RenderedMarkdown;
   private streamRenderTimer?: number;
   private renderedComponents: Component[] = [];
+  /**
+   * Latest raw Markdown rendered into each assistant message body. Updated on
+   * every renderMarkdownInto call and read by the copy button at click time,
+   * so live streams copy the full final Markdown rather than the initial
+   * (empty) stream text.
+   */
+  private messageSources = new WeakMap<HTMLElement, string>();
   private titleMetaEl?: HTMLElement;
   private titleNameEl?: HTMLElement;
   private railEl?: HTMLElement;
@@ -373,11 +380,14 @@ export class ObsidianAgentView extends ItemView {
     const message = this.transcriptEl.createDiv({ cls: "note-pi-message note-pi-message-assistant" });
     const body = message.createDiv({ cls: "note-pi-message-body" });
     if (text) this.renderMarkdownInto(body, text);
-    const copy = message.createEl("button", { cls: "note-pi-copy-button", attr: { "aria-label": "Copy message text", title: "Copy" } });
+    const copy = message.createEl("button", { cls: "note-pi-copy-button", attr: { "aria-label": "Copy Markdown", title: "Copy Markdown" } });
     setIcon(copy, "copy");
     copy.onclick = async () => {
       try {
-        await navigator.clipboard.writeText(body.innerText);
+        // Read the source at click time: renderMarkdownInto refreshes the
+        // body's entry on every (re)render, so live streams copy the latest
+        // raw Markdown instead of rendered text or the initial empty stream.
+        await navigator.clipboard.writeText(this.messageSources.get(body) ?? body.innerText);
         setIcon(copy, "check");
         window.setTimeout(() => setIcon(copy, "copy"), 1200);
       } catch {
@@ -825,6 +835,9 @@ export class ObsidianAgentView extends ItemView {
       this.flushStreamRenderTimer();
       body.removeClass("note-pi-streaming");
       body.addClass("note-pi-error");
+      // The body now shows error text, not Markdown; drop the stale partial
+      // stream source so Copy Markdown falls back to the visible innerText.
+      this.messageSources.delete(body);
       body.setText(error instanceof Error ? error.message : "Chat failed. Fix provider setup and try again.");
       new Notice("Note Pi could not complete the chat turn.");
     } finally {
@@ -847,6 +860,7 @@ export class ObsidianAgentView extends ItemView {
   private renderMarkdownInto(body: HTMLElement, markdown: string, previous?: RenderedMarkdown): RenderedMarkdown {
     previous?.component?.unload();
     body.empty();
+    this.messageSources.set(body, markdown);
     const component = new Component();
     component.load();
     this.renderedComponents.push(component);

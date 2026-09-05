@@ -420,6 +420,26 @@
 .note-pi-message-assistant .note-pi-message-body a {
   color: var(--link-color, var(--interactive-accent));
 }
+/* Headings in assistant responses scale relative to the configured response
+   font (em units against the body's --note-pi-response-font-size), not the
+   theme's oversized reading-view heading sizes. Shared by desktop and mobile;
+   the mobile block only overrides user-card text. */
+.note-pi-message-assistant .note-pi-message-body h1,
+.note-pi-message-assistant .note-pi-message-body h2,
+.note-pi-message-assistant .note-pi-message-body h3,
+.note-pi-message-assistant .note-pi-message-body h4,
+.note-pi-message-assistant .note-pi-message-body h5,
+.note-pi-message-assistant .note-pi-message-body h6 {
+  margin: 0.8em 0 0.4em;
+  line-height: 1.3;
+  font-weight: 600;
+}
+.note-pi-message-assistant .note-pi-message-body h1 { font-size: 1.5em; }
+.note-pi-message-assistant .note-pi-message-body h2 { font-size: 1.35em; }
+.note-pi-message-assistant .note-pi-message-body h3 { font-size: 1.2em; }
+.note-pi-message-assistant .note-pi-message-body h4 { font-size: 1.1em; }
+.note-pi-message-assistant .note-pi-message-body h5 { font-size: 1em; }
+.note-pi-message-assistant .note-pi-message-body h6 { font-size: 0.9em; }
 
 /* Streaming cursor on the live assistant message. */
 .note-pi-streaming::after {
