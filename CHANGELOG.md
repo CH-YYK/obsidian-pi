@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2026-09-05
+
+### Changed
+
+- Assistant responses render Markdown headings at compact, relative sizes: headings stay clearly hierarchical but no longer overwhelm the surrounding body text.
+
+### Fixed
+
+- The Copy Markdown action now copies the original Markdown syntax — headings, lists, links, and code formatting are preserved as written — and streamed responses copy from the latest complete source text.
+
 ## [0.7.1] - 2026-09-05
 
 ### Added
