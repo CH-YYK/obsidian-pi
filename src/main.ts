@@ -5,11 +5,12 @@ import { ensureVendoredJitiRuntime } from "./plugin/jiti-runtime";
 import { AUTH_PROVIDERS, AgentController } from "./harness/host.mjs";
 import { NotePiSettingsTab } from "./settings";
 import { ObsidianAgentView, VIEW_TYPE_NOTE_PI } from "./view";
+import { normalizeResponseFontSize, RESPONSE_FONT_SIZE_DEFAULT } from "./shared/response-font-size.mjs";
 
 type HarnessEvent = { type: string; requestId: string; node?: string; pid?: number };
 export interface NotePiCredential { type: "api_key"; key?: string; [key: string]: unknown; }
-export interface NotePiSettings { providerId: string; agentDir: string; autoContextNote: boolean; credentials: Record<string, NotePiCredential>; googleApiKey?: string; }
-const DEFAULT_SETTINGS: NotePiSettings = { providerId: "google", agentDir: "", autoContextNote: true, credentials: {}, googleApiKey: "" };
+export interface NotePiSettings { providerId: string; agentDir: string; autoContextNote: boolean; responseFontSize: number; credentials: Record<string, NotePiCredential>; googleApiKey?: string; }
+const DEFAULT_SETTINGS: NotePiSettings = { providerId: "google", agentDir: "", autoContextNote: true, responseFontSize: RESPONSE_FONT_SIZE_DEFAULT, credentials: {}, googleApiKey: "" };
 
 export default class NotePiPlugin extends Plugin {
   private controller?: AgentController;
@@ -26,7 +27,8 @@ export default class NotePiPlugin extends Plugin {
     await this.saveData(this.settings);
     await this.configureHarness();
     this.registerView(VIEW_TYPE_NOTE_PI, (leaf) => new ObsidianAgentView(leaf, this.startHarness(), () => this.openSettings(), {
-      autoContextNote: () => this.settings.autoContextNote
+      autoContextNote: () => this.settings.autoContextNote,
+      responseFontSize: () => this.settings.responseFontSize
     }));
     this.addSettingTab(new NotePiSettingsTab(this.app, this));
     this.addCommand({ id: "open-chat", name: "Open chat", callback: () => this.activateView() });
@@ -76,6 +78,17 @@ export default class NotePiPlugin extends Plugin {
     await this.saveData(this.settings);
   }
 
+  responseFontSize() { return normalizeResponseFontSize(this.settings.responseFontSize); }
+  async setResponseFontSize(size: number) {
+    this.settings.responseFontSize = normalizeResponseFontSize(size);
+    await this.saveData(this.settings);
+    // Apply immediately to open Note Pi panes; no plugin reload needed.
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_NOTE_PI)) {
+      const view = leaf.view;
+      if (view instanceof ObsidianAgentView) view.applyResponseFontSize();
+    }
+  }
+
   openSettings() {
     const settings = (this.app as unknown as { setting: { open(): void; openTabById(id: string): void } }).setting;
     settings.open();
@@ -113,7 +126,8 @@ export default class NotePiPlugin extends Plugin {
     }
     const providerId = AUTH_PROVIDERS.some((provider) => provider.id === savedConfiguration.providerId) ? savedConfiguration.providerId ?? "google" : "google";
     const agentDir = this.normalizeAgentDir(savedConfiguration.agentDir === ".pi/agent" ? "" : savedConfiguration.agentDir ?? "");
-    return { ...DEFAULT_SETTINGS, ...savedConfiguration, agentDir, credentials, providerId, googleApiKey: "" };
+    const responseFontSize = normalizeResponseFontSize(savedConfiguration.responseFontSize);
+    return { ...DEFAULT_SETTINGS, ...savedConfiguration, agentDir, credentials, providerId, responseFontSize, googleApiKey: "" };
   }
 
   private async loadStoredSettings(): Promise<Partial<NotePiSettings>> {

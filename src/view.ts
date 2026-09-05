@@ -1,6 +1,7 @@
 import { Component, ItemView, MarkdownRenderer, MarkdownView, Notice, TFile, WorkspaceLeaf, setIcon } from "obsidian";
 import type { HarnessClient, HarnessSessionMeta, HarnessSnapshot } from "./harness/client";
 import { composerTrigger, filterSuggestions, replaceComposerRange } from "./composer-suggestions.mjs";
+import { normalizeResponseFontSize } from "./shared/response-font-size.mjs";
 
 export const VIEW_TYPE_NOTE_PI = "note-pi-view";
 
@@ -12,9 +13,10 @@ type ComposerSuggestionKind = "note" | "note-browser" | "command";
 type ComposerSuggestionItem = { name: string; detail: string; file?: TFile; command?: string };
 type ComposerSuggestionRange = { start: number; end: number };
 
-/** Host-supplied preference for attaching the focused note when a session starts. */
-export interface ContextNotePrefs {
+/** Host-supplied view preferences (context seeding, response typography). */
+export interface NotePiViewPrefs {
   autoContextNote(): boolean;
+  responseFontSize?(): number;
 }
 
 function formatClock(date: Date): string {
@@ -70,7 +72,7 @@ export class ObsidianAgentView extends ItemView {
   private seededContextSessions = new Set<string>();
   private thinkingText = "";
 
-  constructor(leaf: WorkspaceLeaf, private harness: HarnessClient, private readonly openSettings: () => void, private readonly contextPrefs?: ContextNotePrefs) {
+  constructor(leaf: WorkspaceLeaf, private harness: HarnessClient, private readonly openSettings: () => void, private readonly viewPrefs?: NotePiViewPrefs) {
     super(leaf);
     this.snapshot = harness.snapshot();
   }
@@ -137,6 +139,7 @@ export class ObsidianAgentView extends ItemView {
     this.turnTimelineEl = undefined;
     this.contentEl.empty();
     this.contentEl.addClass("note-pi-view");
+    this.applyResponseFontSize();
     this.renderHeader();
     this.bodyEl = this.contentEl.createDiv({ cls: "note-pi-body" });
     this.renderSessionRail();
@@ -344,6 +347,18 @@ export class ObsidianAgentView extends ItemView {
     setup.createDiv({ text: "Add an API key or token in Note Pi settings to send your first chat message." });
     const button = setup.createEl("button", { text: "Open provider settings", cls: "mod-cta" });
     button.onclick = this.openSettings;
+  }
+
+  /**
+   * Re-read the host's response font size preference and apply it to this
+   * pane. Scoped to the view element so assistant Markdown bodies pick it up
+   * via --note-pi-response-font-size without touching the rest of Obsidian.
+   * Called on render and by the plugin when the setting changes, so open
+   * views update live without a reload.
+   */
+  applyResponseFontSize() {
+    const size = normalizeResponseFontSize(this.viewPrefs?.responseFontSize?.());
+    this.contentEl.style.setProperty("--note-pi-response-font-size", `${size}px`);
   }
 
   private addMessage(role: "user" | "assistant", text: string, timestamp?: Date) {
@@ -586,7 +601,7 @@ export class ObsidianAgentView extends ItemView {
     const sessionId = this.snapshot.activeSessionId;
     if (!sessionId || this.seededContextSessions.has(sessionId)) return;
     this.seededContextSessions.add(sessionId);
-    if (!this.contextPrefs?.autoContextNote()) return;
+    if (!this.viewPrefs?.autoContextNote()) return;
     const file = this.focusedNoteFile();
     if (!file) return;
     if (this.contextNotes.some((note) => note.path === file.path)) return;

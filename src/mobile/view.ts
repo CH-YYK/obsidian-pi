@@ -1,10 +1,16 @@
 import { Component, ItemView, MarkdownRenderer, Menu, Notice, WorkspaceLeaf, setIcon } from "obsidian";
 import type { HarnessClient, HarnessSnapshot } from "../harness/client";
+import { normalizeResponseFontSize } from "../shared/response-font-size.mjs";
 
 export const VIEW_TYPE_NOTE_PI_MOBILE = "note-pi-mobile-view";
 
 /** Interval between Markdown re-renders while a response is streaming. */
 const STREAM_RENDER_INTERVAL_MS = 120;
+
+/** Host-supplied view preferences (response typography). */
+export interface MobileNotePiViewPrefs {
+  responseFontSize?(): number;
+}
 
 function formatClock(date: Date): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
@@ -39,7 +45,12 @@ export class MobileAgentView extends ItemView {
   private thinkingItemEl?: HTMLElement;
   private thinkingText = "";
 
-  constructor(leaf: WorkspaceLeaf, private readonly harness: HarnessClient, private readonly openSettings: () => void) {
+  constructor(
+    leaf: WorkspaceLeaf,
+    private readonly harness: HarnessClient,
+    private readonly openSettings: () => void,
+    private readonly viewPrefs?: MobileNotePiViewPrefs
+  ) {
     super(leaf);
     this.snapshot = harness.snapshot();
   }
@@ -81,11 +92,24 @@ export class MobileAgentView extends ItemView {
     this.teardownRenderedMarkdown();
     this.contentEl.empty();
     this.contentEl.addClass("note-pi-view", "note-pi-mobile");
+    this.applyResponseFontSize();
     this.renderHeader();
     this.transcriptEl = this.contentEl.createDiv({ cls: "note-pi-transcript" });
     this.renderTranscript();
     if (this.snapshot.providerState === "configured") this.renderComposer();
     else this.renderSetupCard();
+  }
+
+  /**
+   * Re-read the host's response font size preference and apply it to this
+   * view. Scoped to the view element so assistant Markdown bodies pick it up
+   * via --note-pi-response-font-size without touching the rest of Obsidian.
+   * Called on render and by the plugin when the setting changes, so open
+   * views update live without a reload.
+   */
+  applyResponseFontSize() {
+    const size = normalizeResponseFontSize(this.viewPrefs?.responseFontSize?.());
+    this.contentEl.style.setProperty("--note-pi-response-font-size", `${size}px`);
   }
 
   private sessionTitle(): string {
